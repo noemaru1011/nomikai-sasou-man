@@ -1,7 +1,3 @@
-```txt
-npm install
-npm run dev
-```
 # 飲み会誘うマン
 
 ## コンセプト
@@ -45,25 +41,6 @@ npm run dev
 ※店が開いてなかったとき
 →第3候補までなら空いてるっしょ
 
-## 想定技術スタック
-
-```txt
-npm run deploy
-```
-
-[For generating/synchronizing types based on your Worker configuration run](https://developers.cloudflare.com/workers/wrangler/commands/#types):
-
-```txt
-npm run cf-typegen
-```
-
-Pass the `CloudflareBindings` as generics when instantiating `Hono`:
-
-```ts
-// src/index.ts
-const app = new Hono<{ Bindings: CloudflareBindings }>()
-```
-
 ### ファイル
 
 書くファイルをリスト化
@@ -74,3 +51,117 @@ const app = new Hono<{ Bindings: CloudflareBindings }>()
     - TeamsのSDK(予定表)
     - AI(オルカルーター やりながら)
     - TeamsのSDK(予定表追加)
+
+① Graph API単体
+   └─ 今ここまで完了
+
+② Teams Bot
+   └─ 「飲み会したい」を受信
+
+③ Teams SSO
+   └─ Botを使っているAさんを特定
+
+④ Hono
+   └─ AさんのTokenを使ってGraph API
+
+⑤ Graph
+   └─ Aさんの予定取得
+
+⑥ 複数ユーザー
+   └─ B/C/Dの予定取得方法・権限を検討
+
+⑦ 飲み会候補日時を計算
+
+⑧ BotからTeamsへ返信
+
+メモ
+
+```ts
+import { Hono } from "hono";
+
+type Bindings = {
+  CLIENT_ID: string;
+  TENANT_ID: string;
+  CLIENT_SECRET:string
+};
+
+const app = new Hono<{ Bindings: Bindings }>();
+
+app.get("/", (c) => {
+  return c.text("Graph API Demo");
+});
+
+app.get("/auth/login", (c) => {
+  const clientId = c.env.CLIENT_ID;
+  const tenantId = c.env.TENANT_ID;
+
+  const params = new URLSearchParams({
+    client_id: clientId,
+    response_type: "code",
+    redirect_uri: "http://localhost:8787/auth/callback",
+    response_mode: "query",
+    scope: "openid profile User.Read Calendars.Read",
+  });
+
+  const authUrl =
+    `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?${params.toString()}`;
+
+  return c.redirect(authUrl);
+});
+
+app.get("/auth/callback", async (c) => {
+  const code = c.req.query("code");
+
+  if (!code) {
+    return c.text("Authorization code not found", 400);
+  }
+
+  const tokenUrl =
+    `https://login.microsoftonline.com/${c.env.TENANT_ID}/oauth2/v2.0/token`;
+
+  const body = new URLSearchParams({
+    client_id: c.env.CLIENT_ID,
+    client_secret: c.env.CLIENT_SECRET,
+    grant_type: "authorization_code",
+    code,
+    redirect_uri: "http://localhost:8787/auth/callback",
+  });
+
+  const tokenResponse = await fetch(tokenUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+
+const tokenResult = (await tokenResponse.json()) as {
+  access_token?: string;
+  error?: string;
+  error_description?: string;
+};
+
+  if (!tokenResponse.ok || !tokenResult.access_token) {
+    return c.json(tokenResult, 400);
+  }
+
+  const graphResponse = await fetch(
+    "https://graph.microsoft.com/v1.0/me/calendar/events",
+    {
+      headers: {
+        Authorization: `Bearer ${tokenResult.access_token}`,
+      },
+    },
+  );
+
+  const graphResult = await graphResponse.json();
+
+  if (!graphResponse.ok) {
+    return c.json(graphResult, 400);
+  }
+
+  return c.json(graphResult);
+});
+
+export default app;
+```
