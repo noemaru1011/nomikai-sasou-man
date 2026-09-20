@@ -87,17 +87,17 @@ Phase 0  要件固定
     ↓
 Phase 1  Microsoft 365 Sandbox構築
     ↓
-Phase 2  Graph / 認証の検証
+Phase 2  Graph（API） / 認証の検証　☆
     ↓
 Phase 3  Teams Botの最小実装
     ↓
-Phase 4  カレンダー連携
+Phase 4  カレンダー連携(飲み会の予定をカレンダーにぶち込む用)
     ↓
 Phase 5  飲み会調整ロジック
     ↓
-Phase 6  AI導入
+Phase 6  AI導入　☆
     ↓
-Phase 7  店舗検索
+Phase 7  店舗検索　（外部API?）
     ↓
 Phase 8  Teamsチャネルへの提案
     ↓
@@ -106,4 +106,4 @@ Phase 9  リアクション集計
 Phase 10  一連のデモフロー完成
 ```
 
-### テスト
+###
