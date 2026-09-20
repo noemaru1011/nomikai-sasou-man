@@ -74,3 +74,30 @@ const app = new Hono<{ Bindings: CloudflareBindings }>()
     - TeamsのSDK(予定表)
     - AI(オルカルーター やりながら)
     - TeamsのSDK(予定表追加)
+
+### アーキテクチャ
+Teams
+  │
+  │ 「予定教えて」、Botに個別メッセージを送る→トリガーになる→アクションでHTTPリクエストをアプリサーバに送る(URL指定)
+  ↓
+Hono
+  │
+  │ fetch()
+  ↓
+Microsoft Graph　API
+  │
+  │ /me/calendar/events
+  ↓
+予定表
+  │
+  ↓
+Hono
+  │
+  ↓
+Orca Router
+  │
+  ↓
+Hono
+  │Bot Framework REST API
+  ↓
+Teamsへ返信
