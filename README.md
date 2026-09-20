@@ -1,3 +1,7 @@
+```txt
+npm install
+npm run dev
+```
 # 飲み会誘うマン
 
 ## コンセプト
@@ -43,67 +47,21 @@
 
 ## 想定技術スタック
 
-- Teams SDK
-- orcarouter
-- 言語未定
-
-## 構成図仮
-
-```text
-                    ┌──────────────┐
-                    │ Microsoft    │
-                    │ Teams        │
-                    └──────┬───────┘
-                           │
-             ┌─────────────┴─────────────┐
-             │                           │
-       個人チャット                    チャネル
-             │                           │
-             ▼                           ▼
-      「飲み会したい」             AIが投稿
-             │
-             ▼
-      ┌──────────────┐
-      │ Teams Bot    │
-      └──────┬───────┘
-             │
-             ▼
-      ┌──────────────┐
-      │ Backend      │
-      └──────┬───────┘
-             │
-      ┌──────┼───────────┐
-      ▼      ▼           ▼
-   Graph   OrcaRouter   店舗検索
-      │      │
-      ▼      ▼
-   Calendar   LLM
+```txt
+npm run deploy
 ```
 
-## 全体フロー
+[For generating/synchronizing types based on your Worker configuration run](https://developers.cloudflare.com/workers/wrangler/commands/#types):
 
-```text
-Phase 0  要件固定
-    ↓
-Phase 1  Microsoft 365 Sandbox構築
-    ↓
-Phase 2  Graph / 認証の検証
-    ↓
-Phase 3  Teams Botの最小実装
-    ↓
-Phase 4  カレンダー連携
-    ↓
-Phase 5  飲み会調整ロジック
-    ↓
-Phase 6  AI導入
-    ↓
-Phase 7  店舗検索
-    ↓
-Phase 8  Teamsチャネルへの提案
-    ↓
-Phase 9  リアクション集計
-    ↓
-Phase 10  一連のデモフロー完成
+```txt
+npm run cf-typegen
+```
+
+Pass the `CloudflareBindings` as generics when instantiating `Hono`:
+
+```ts
+// src/index.ts
+const app = new Hono<{ Bindings: CloudflareBindings }>()
 ```
 
 ### ファイル
