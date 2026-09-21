@@ -1,89 +1,73 @@
+import axios from "axios";
 import { Hono } from "hono";
-import type { Context } from "hono";
 
-type Bindings = {
-  CLIENT_ID: string;
-  TENANT_ID: string;
-  CLIENT_SECRET: string;
-};
+import { getBotAccessToken } from "../services/botAuth";
+import { getGraphAccessToken } from "../services/graphAuth";
+import type { AppEnv } from "../types";
 
-type AppContext = Context<{
-  Bindings: Bindings;
-}>;
-
-const bot = new Hono<{
-  Bindings: Bindings;
-}>();
+const bot = new Hono<AppEnv>();
 
 bot.post("/messages", async (c) => {
-  const activity = await c.req.json();
+  const activity = (await c.req.json()) as AppEnv["Variables"]["activity"];
 
-  console.log(
-    "Bot Activity:",
-    JSON.stringify(activity, null, 2),
-  );
+  c.set("activity", activity);
 
-  const accessToken = await getBotAccessToken(c);
+  // Bot Frameworkのアクセストークン
+  const botAccessToken = await getBotAccessToken(c.env);
 
-  const response = await fetch(
-    `${activity.serviceUrl}/v3/conversations/${activity.conversation.id}/activities/${activity.replyToId}`,
+  // Microsoft Graphのアクセストークン
+  const graphAccessToken = await getGraphAccessToken(c.env);
+
+  // メッセージを送信したユーザー
+  const aadObjectId = activity.from?.aadObjectId;
+
+  if (!aadObjectId) {
+    throw new Error("送信者のaadObjectIdが取得できませんでした");
+  }
+
+  // Graphからユーザー情報を取得
+  const userResponse = await axios.get<{
+    displayName?: string;
+    mail?: string;
+    userPrincipalName?: string;
+  }>(
+    `https://graph.microsoft.com/v1.0/users/${aadObjectId}?$select=displayName,mail,userPrincipalName`,
     {
-      method: "POST",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
+        Authorization: `Bearer ${graphAccessToken}`,
       },
-      body: JSON.stringify({
-        type: "message",
-        text: "こんにちは！メッセージを受信しました。",
-      }),
     },
   );
 
-  if (!response.ok) {
-    const error = await response.text();
+  const user = userResponse.data;
 
-    console.error("Send message failed:", error);
+  const email = user.mail ?? user.userPrincipalName;
 
-    return c.json(
-      {
-        error: "Failed to send message",
-      },
-      500,
-    );
+  if (!email) {
+    throw new Error("メールアドレスが取得できませんでした");
   }
+
+  console.log("Request user:", {
+    displayName: user.displayName,
+    email,
+  });
+
+  // Teamsへ返信
+  await axios.post(
+    `${activity.serviceUrl}/v3/conversations/${activity.conversation.id}/activities/${activity.replyToId}`,
+    {
+      type: "message",
+      text: `あなたのメールアドレスは ${email} です。`,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${botAccessToken}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
 
   return c.json({});
 });
-
-async function getBotAccessToken(c: AppContext): Promise<string> {
-  const response = await fetch(
-    `https://login.microsoftonline.com/${c.env.TENANT_ID}/oauth2/v2.0/token`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        grant_type: "client_credentials",
-        client_id: c.env.CLIENT_ID,
-        client_secret: c.env.CLIENT_SECRET,
-        scope: "https://api.botframework.com/.default",
-      }),
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      `Failed to get access token: ${await response.text()}`,
-    );
-  }
-
-  const data = (await response.json()) as {
-    access_token: string;
-  };
-
-  return data.access_token;
-}
 
 export default bot;

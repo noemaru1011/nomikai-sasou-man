@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@azure/msal-node": "^6.0.1",
+    "axios": "1.19.0",
     "hono": "^4.13.8"
   },
   "devDependencies": {

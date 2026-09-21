@@ -1,7 +1,12 @@
 import { Hono } from "hono";
-import bot from "./routes/bot";
 
-const app = new Hono();
+import bot from "./routes/bot";
+import { onError } from "./errors/onError";
+import type { AppEnv } from "./types";
+
+const app = new Hono<AppEnv>();
+
+app.onError(onError);
 
 app.get("/", (c) => {
   return c.text("飲み会誘うマン Backend");
