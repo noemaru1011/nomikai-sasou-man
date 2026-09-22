@@ -1,11 +1,12 @@
 import axios from "axios";
 import type { ErrorHandler } from "hono";
 
+import { AppError } from "../errors/AppError";
 import { getBotAccessToken } from "../services/auth/botAuth";
 import type { AppEnv } from "../types";
 
 export const onError: ErrorHandler<AppEnv> = async (error, c) => {
-    //運用上はいったんこれだけ
+    // 運用上はいったんこれだけ
     if (axios.isAxiosError(error)) {
         console.error("Axios Error:", {
             message: error.message,
@@ -18,16 +19,21 @@ export const onError: ErrorHandler<AppEnv> = async (error, c) => {
 
     const activity = c.get("activity");
 
-    //アクティビティがあるなら、teamsに返信
+    // アクティビティがあるなら、Teamsに返信
     if (activity) {
         try {
             const accessToken = await getBotAccessToken(c.env);
+
+            const message =
+                error instanceof AppError
+                    ? error.message
+                    : "予期せぬエラーが発生しました。申し訳ありません。処理に失敗しました。";
 
             await axios.post(
                 `${activity.serviceUrl}/v3/conversations/${activity.conversation.id}/activities/${activity.replyToId}`,
                 {
                     type: "message",
-                    text: "申し訳ありません。処理に失敗しました。詳細はログを確認してください。",
+                    text: message,
                 },
                 {
                     headers: {
@@ -36,7 +42,6 @@ export const onError: ErrorHandler<AppEnv> = async (error, c) => {
                     },
                 },
             );
-            //teamsに返信できないときは、そのエラーも記録
         } catch (replyError) {
             console.error(
                 "Failed to send error message to Teams:",

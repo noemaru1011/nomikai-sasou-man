@@ -3,6 +3,7 @@ import type OpenAI from "openai";
 
 import { executeTool } from "./executeTool";
 import { aiTools } from "./tools";
+import { AppError } from "../errors/AppError";
 
 type ChatContext = {
     graphAccessToken: string;
@@ -50,7 +51,6 @@ export async function chat(
 
     for (let round = 0; round < maxToolRounds; round++) {
 
-        const requestStart = Date.now();
 
         let completion;
 
@@ -72,7 +72,7 @@ export async function chat(
         const choice = completion.choices[0];
 
         if (!choice) {
-            throw new Error("AIから応答が返されませんでした。");
+            throw new AppError("AIから応答が返されませんでした。");
         }
 
         const assistantMessage = choice.message;
@@ -100,7 +100,7 @@ export async function chat(
             } catch (error) {
                 console.error("Tool arguments JSON parse error:", error);
 
-                throw new Error(
+                throw new AppError(
                     `Toolの引数をJSONとして解析できませんでした: ${toolCall.function.name}`,
                 );
             }
@@ -122,5 +122,5 @@ export async function chat(
         }
     }
 
-    throw new Error("AIのTool呼び出しが上限回数を超えました。");
+    throw new AppError("AIのTool呼び出しが上限回数を超えました。");
 }

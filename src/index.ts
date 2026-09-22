@@ -8,10 +8,6 @@ const app = new Hono<AppEnv>();
 
 app.onError(onError);
 
-app.get("/", (c) => {
-  return c.text("飲み会誘うマン Backend");
-});
-
 app.route("/api/bot", bot);
 
 export default app;

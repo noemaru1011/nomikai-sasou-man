@@ -3,6 +3,7 @@ import type { User } from "@microsoft/microsoft-graph-types";
 import { getChannelMembers } from "./getChannelMembers";
 import { searchUsersByDepartment } from "./searchUsersByDepartment";
 import { searchUsersByHireYear } from "./searchUsersByHireYear";
+import { AppError } from "../errors/AppError";
 
 type FindUsersOptions = {
     department?: string;
@@ -18,14 +19,14 @@ export async function findUsers(
     const { department, hireYear, teamName, channelName } = options;
 
     if (teamName !== undefined && channelName === undefined) {
-        throw new Error(
-            "channelNameを指定する場合はteamNameも指定してください",
+        throw new AppError(
+            "チャネル名を指定する場合はチーム名も指定してください",
         );
     }
 
     if (channelName !== undefined && teamName === undefined) {
-        throw new Error(
-            "teamNameを指定する場合はchannelNameも指定してください",
+        throw new AppError(
+            "チーム名を指定する場合はチャネル名も指定してください",
         );
     }
 
@@ -63,7 +64,7 @@ export async function findUsers(
     }
 
     if (userSets.length === 0) {
-        throw new Error("検索条件を1つ以上指定してください");
+        throw new AppError("ユーザー検索条件を1つ以上指定(チャネル名・部署・入社年度)してください");
     }
 
     return intersectUsers(userSets);

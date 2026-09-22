@@ -5,6 +5,7 @@ import type {
     Team,
     User,
 } from "@microsoft/microsoft-graph-types";
+import { AppError } from "../errors/AppError";
 
 type GraphCollection<T> = {
     value: T[];
@@ -33,7 +34,7 @@ export async function getChannelMembers(
     );
 
     if (!team?.id) {
-        throw new Error(`チームが見つかりません: ${teamName}`);
+        throw new AppError(`チームが見つかりません: ${teamName}`);
     }
 
     // チーム内のチャネル一覧を取得
@@ -50,7 +51,7 @@ export async function getChannelMembers(
     );
 
     if (!channel?.id) {
-        throw new Error(
+        throw new AppError(
             `チャネルが見つかりません: ${teamName} / ${channelName}`,
         );
     }

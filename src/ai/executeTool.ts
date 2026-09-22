@@ -6,6 +6,7 @@ import { getChannelMembers } from "../tools/getChannelMembers";
 import { getUserSchedules } from "../tools/getUserSchedules";
 import { searchUsersByDepartment } from "../tools/searchUsersByDepartment";
 import { searchUsersByHireYear } from "../tools/searchUsersByHireYear";
+import { AppError } from "../errors/AppError";
 
 export type ToolContext = {
     graphAccessToken: string;
@@ -108,8 +109,8 @@ export async function executeTool(
 
 
             if (!context.users) {
-                throw new Error(
-                    "getUserSchedulesを実行する前にユーザー検索が必要です。",
+                throw new AppError(
+                    "条件に合うユーザーが見つかりませんでした。",
                 );
             }
 
@@ -136,7 +137,7 @@ export async function executeTool(
         }
 
         default:
-            throw new Error(
+            throw new AppError(
                 `Unknown tool: ${toolName}`,
             );
     }
