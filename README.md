@@ -165,3 +165,16 @@ const tokenResult = (await tokenResponse.json()) as {
 
 export default app;
 ```
+
+```ts
+{
+    startDateTime: "2026-09-22T00:00:00+09:00",
+    endDateTime: "2026-10-22T00:00:00+09:00",
+    schedules: Map([
+        ["田中太郎のユーザーID", [予定1, 予定2]],
+        ["佐藤花子のユーザーID", [予定1]],
+        ["高橋翔太のユーザーID", []],
+        ["伊藤美咲のユーザーID", [予定1, 予定2]]
+    ])
+}
+```

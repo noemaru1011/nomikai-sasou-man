@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { Bindings } from "../types";
+import type { Bindings } from "../../types";
 
 type TokenResponse = {
     access_token: string;
