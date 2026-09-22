@@ -11,8 +11,7 @@
     "axios": "1.19.0",
     "botbuilder": "^4.23.3",
     "hono": "^4.13.8",
-    "openai": "^7.20.0",
-    "zod": "^4.6.5"
+    "openai": "^7.20.0"
   },
   "devDependencies": {
     "@microsoft/microsoft-graph-types": "^2.43.1",
