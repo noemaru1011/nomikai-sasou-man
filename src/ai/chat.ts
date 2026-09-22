@@ -15,32 +15,8 @@ export async function chat(
     message: string,
     context: ChatContext,
 ): Promise<string> {
-    const now = new Date();
-
-    const jstNow = new Intl.DateTimeFormat("sv-SE", {
-        timeZone: "Asia/Tokyo",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hourCycle: "h23",
-    }).format(now);
 
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-        {
-            role: "system",
-            content: [
-                "あなたは社内の飲み会調整Botです。",
-                "ユーザーの依頼に応じて利用可能なToolを使用してください。",
-                `現在日時は ${jstNow}（日本時間）です。`,
-                "日時を扱う場合は日本時間（JST）を基準にしてください。",
-                "Toolへ日時を渡す場合はISO 8601形式の+09:00オフセットを使用してください。",
-                "ユーザーが複数のユーザーを対象としている場合、まず対象ユーザーを検索してから予定を取得してください。",
-                "予定取得では対象ユーザー全員が参加可能な時間を(18時から24時まで)返してください。",
-            ].join("\n"),
-        },
         {
             role: "user",
             content: message,

@@ -130,7 +130,7 @@ export async function executeTool(
 
 
             const limitedAvailableTimes =
-                availableTimes.slice(0, 20);
+                availableTimes.slice(0, 30);
 
 
             return limitedAvailableTimes;
