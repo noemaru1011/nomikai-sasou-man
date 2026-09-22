@@ -45,6 +45,11 @@ export async function getUserSchedules(
                 },
             );
 
+            console.log("Graph calendarView:", {
+                userId: user.id,
+                count: result.data.value.length,
+            });
+
             return {
                 userId: user.id,
                 schedules: result.data.value,
@@ -52,14 +57,30 @@ export async function getUserSchedules(
         }),
     );
 
+    const schedules = new Map<string, ScheduleItem[]>();
+
+    for (const result of response) {
+        if (!result) {
+            continue;
+        }
+
+        schedules.set(result.userId, result.schedules);
+    }
+
+    console.log(
+        "User schedules:",
+        Array.from(schedules.entries()).map(
+            ([userId, scheduleItems]) => ({
+                userId,
+                count: scheduleItems.length,
+            }),
+        ),
+    );
+
     return {
         startDateTime: start,
         endDateTime: end,
-        schedules: new Map(
-            response
-                .filter((result) => result !== null)
-                .map((result) => [result.userId, result.schedules]),
-        ),
+        schedules,
     };
 }
 
@@ -81,9 +102,7 @@ function getOneMonthLater(): string {
 
     const [year, month, day] = jstDate.split("-").map(Number);
 
-    const date = new Date(
-        Date.UTC(year, month - 1, day),
-    );
+    const date = new Date(Date.UTC(year, month - 1, day));
 
     date.setUTCMonth(date.getUTCMonth() + 1);
 

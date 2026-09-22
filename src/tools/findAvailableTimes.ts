@@ -5,7 +5,6 @@ import type { UserSchedules } from "./getUserSchedules";
 const NOMIKAI_DURATION_MINUTES = 120;
 const NOMIKAI_START_HOUR = 18;
 const NOMIKAI_END_HOUR = 24;
-const CANDIDATE_INTERVAL_MINUTES = 30;
 
 export type AvailableTime = {
     startDateTime: string;
@@ -17,6 +16,10 @@ export function findAvailableTimes(
 ): AvailableTime[] {
     const searchStart = new Date(userSchedules.startDateTime);
     const searchEnd = new Date(userSchedules.endDateTime);
+
+    if (userSchedules.schedules.size === 0) {
+        return [];
+    }
 
     const userAvailablePeriods = [
         ...userSchedules.schedules.values(),
@@ -183,42 +186,14 @@ function intersectAvailablePeriods(
         );
     }
 
-    return commonPeriods.flatMap((period) => {
+    return commonPeriods.filter((period) => {
         const start = new Date(period.startDateTime);
         const end = new Date(period.endDateTime);
 
-        if (
-            end.getTime() - start.getTime() <
+        return (
+            end.getTime() - start.getTime() >=
             NOMIKAI_DURATION_MINUTES * 60 * 1000
-        ) {
-            return [];
-        }
-
-        const result: AvailableTime[] = [];
-        let current = start;
-
-        while (
-            current.getTime() +
-            NOMIKAI_DURATION_MINUTES * 60 * 1000 <=
-            end.getTime()
-        ) {
-            const candidateEnd = new Date(
-                current.getTime() +
-                NOMIKAI_DURATION_MINUTES * 60 * 1000,
-            );
-
-            result.push({
-                startDateTime: current.toISOString(),
-                endDateTime: candidateEnd.toISOString(),
-            });
-
-            current = new Date(
-                current.getTime() +
-                CANDIDATE_INTERVAL_MINUTES * 60 * 1000,
-            );
-        }
-
-        return result;
+        );
     });
 }
 

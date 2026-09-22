@@ -1,171 +1,115 @@
 import axios from "axios";
 import { Hono } from "hono";
+import type { Context } from "hono";
 
+import { chat } from "../ai/chat";
+import { createOrcaRouterClient } from "../ai/client";
 import { getBotAccessToken } from "../services/auth/botAuth";
 import { getGraphAccessToken } from "../services/auth/graphAuth";
-import { findAvailableTimes } from "../tools/findAvailableTimes";
-import { findUsers } from "../tools/findUsers";
-import { getUserSchedules } from "../tools/getUserSchedules";
 import type { AppEnv } from "../types";
 
 const bot = new Hono<AppEnv>();
 
 bot.post("/messages", async (c) => {
-  const activity = await c.req.json<AppEnv["Variables"]["activity"]>();
+  const activity =
+    await c.req.json<AppEnv["Variables"]["activity"]>();
 
   c.set("activity", activity);
 
-  const botAccessToken = await getBotAccessToken(c.env);
-  const graphAccessToken = await getGraphAccessToken(c.env);
+  console.log("=== BOT MESSAGE START ===");
+  console.log("Activity text:", activity.text);
 
-  const users = await findUsers(
-    graphAccessToken,
-    {
-      department: "IT部",
-    },
+  const userMessage = activity.text?.trim();
+
+  if (!userMessage) {
+    console.log("No user message.");
+    return c.json({});
+  }
+
+  c.executionCtx.waitUntil(
+    processMessage(c, activity, userMessage),
   );
 
-  console.log("Users:", users);
-
-  const userSchedules = await getUserSchedules(
-    graphAccessToken,
-    users,
-  );
-
-  console.log("User schedules:", userSchedules);
-
-  const availableTimes = findAvailableTimes(userSchedules);
-
-  console.log("Available times:", availableTimes);
-
-  const groupedAvailableTimes =
-    groupAvailableTimesByDate(availableTimes);
-
-  const availableTimeText =
-    Object.entries(groupedAvailableTimes)
-      .map(
-        ([date, times]) =>
-          [
-            date,
-            ...times.map(
-              (time) =>
-                `${time.start} - ${time.end}`,
-            ),
-          ].join("\n"),
-      )
-      .join("\n\n");
-
-  const text =
-    users.length === 0
-      ? "参加者が見つかりませんでした。"
-      : [
-        "【参加者】",
-        ...users.map(
-          (user) => user.displayName ?? "名前なし",
-        ),
-        "",
-        "【飲み会候補】",
-        availableTimeText,
-      ].join("\n");
-
-  await axios.post(
-    `${activity.serviceUrl}/v3/conversations/${activity.conversation.id}/activities/${activity.replyToId}`,
-    {
-      type: "message",
-      text,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${botAccessToken}`,
-        "Content-Type": "application/json",
-      },
-    },
-  );
+  console.log("Returning 200 OK immediately.");
 
   return c.json({});
 });
 
-type DisplayAvailableTime = {
-  start: string;
-  end: string;
-};
+async function processMessage(
+  c: Context<AppEnv>,
+  activity: AppEnv["Variables"]["activity"],
+  userMessage: string,
+): Promise<void> {
+  try {
+    console.log("=== ASYNC BOT PROCESS START ===");
 
-function groupAvailableTimesByDate(
-  availableTimes: {
-    startDateTime: string;
-    endDateTime: string;
-  }[],
-): Record<string, DisplayAvailableTime[]> {
-  const grouped: Record<
-    string,
-    DisplayAvailableTime[]
-  > = {};
+    const botAccessToken = await getBotAccessToken(c.env);
+    const graphAccessToken = await getGraphAccessToken(c.env);
 
-  for (const time of availableTimes) {
-    const start = formatJstDateTime(
-      time.startDateTime,
-    );
-    const end = formatJstDateTime(
-      time.endDateTime,
+    console.log("Creating OrcaRouter client...");
+
+    const orcaRouterClient = createOrcaRouterClient(
+      c.env.ORCAROUTER_API_KEY,
     );
 
-    const date = start.date;
+    console.log("Calling chat...");
 
-    grouped[date] ??= [];
+    const response = await chat(
+      orcaRouterClient,
+      userMessage,
+      {
+        graphAccessToken,
+      },
+    );
 
-    grouped[date].push({
-      start: start.time,
-      end: end.time,
-    });
+    console.log("chat completed.");
+    console.log("AI response:", response);
+
+    await axios.post(
+      `${activity.serviceUrl}/v3/conversations/${activity.conversation.id}/activities/${activity.replyToId}`,
+      {
+        type: "message",
+        text: response,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${botAccessToken}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    console.log("Teams reply sent.");
+    console.log("=== ASYNC BOT PROCESS END ===");
+  } catch (error) {
+    console.error("=== ASYNC BOT PROCESS ERROR ===");
+    console.error(error);
+
+    try {
+      const botAccessToken = await getBotAccessToken(c.env);
+
+      await axios.post(
+        `${activity.serviceUrl}/v3/conversations/${activity.conversation.id}/activities/${activity.replyToId}`,
+        {
+          type: "message",
+          text: "処理中にエラーが発生しました。",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${botAccessToken}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      console.log("Error message sent to Teams.");
+    } catch (replyError) {
+      console.error(
+        "Failed to send error message to Teams:",
+        replyError,
+      );
+    }
   }
-
-  return grouped;
-}
-
-function formatJstDateTime(dateTime: string): {
-  date: string;
-  time: string;
-} {
-  const date = new Date(dateTime);
-
-  const parts = new Intl.DateTimeFormat("ja-JP", {
-    timeZone: "Asia/Tokyo",
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(date);
-
-  const month = parts.find(
-    (part) => part.type === "month",
-  )?.value;
-
-  const day = parts.find(
-    (part) => part.type === "day",
-  )?.value;
-
-  const hour = parts.find(
-    (part) => part.type === "hour",
-  )?.value;
-
-  const minute = parts.find(
-    (part) => part.type === "minute",
-  )?.value;
-
-  if (
-    month === undefined ||
-    day === undefined ||
-    hour === undefined ||
-    minute === undefined
-  ) {
-    throw new Error("日時の変換に失敗しました");
-  }
-
-  return {
-    date: `${month}/${day}`,
-    time: `${hour}:${minute}`,
-  };
 }
 
 export default bot;

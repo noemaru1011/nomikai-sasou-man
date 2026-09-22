@@ -4,6 +4,7 @@ export type Bindings = {
     CLIENT_ID: string;
     TENANT_ID: string;
     CLIENT_SECRET: string;
+    ORCAROUTER_API_KEY: string;
 };
 
 export type AppEnv = {
