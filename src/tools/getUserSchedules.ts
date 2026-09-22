@@ -45,10 +45,6 @@ export async function getUserSchedules(
                 },
             );
 
-            console.log("Graph calendarView:", {
-                userId: user.id,
-                count: result.data.value.length,
-            });
 
             return {
                 userId: user.id,
@@ -67,15 +63,6 @@ export async function getUserSchedules(
         schedules.set(result.userId, result.schedules);
     }
 
-    console.log(
-        "User schedules:",
-        Array.from(schedules.entries()).map(
-            ([userId, scheduleItems]) => ({
-                userId,
-                count: scheduleItems.length,
-            }),
-        ),
-    );
 
     return {
         startDateTime: start,

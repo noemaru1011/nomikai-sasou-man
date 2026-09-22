@@ -16,21 +16,14 @@ bot.post("/messages", async (c) => {
 
   c.set("activity", activity);
 
-  console.log("=== BOT MESSAGE START ===");
-  console.log("Activity text:", activity.text);
-
   const userMessage = activity.text?.trim();
 
   if (!userMessage) {
-    console.log("No user message.");
     return c.json({});
   }
 
-  c.executionCtx.waitUntil(
-    processMessage(c, activity, userMessage),
-  );
+  await processMessage(c, activity, userMessage);
 
-  console.log("Returning 200 OK immediately.");
 
   return c.json({});
 });
@@ -41,18 +34,15 @@ async function processMessage(
   userMessage: string,
 ): Promise<void> {
   try {
-    console.log("=== ASYNC BOT PROCESS START ===");
 
     const botAccessToken = await getBotAccessToken(c.env);
     const graphAccessToken = await getGraphAccessToken(c.env);
 
-    console.log("Creating OrcaRouter client...");
 
     const orcaRouterClient = createOrcaRouterClient(
       c.env.ORCAROUTER_API_KEY,
     );
 
-    console.log("Calling chat...");
 
     const response = await chat(
       orcaRouterClient,
@@ -62,8 +52,6 @@ async function processMessage(
       },
     );
 
-    console.log("chat completed.");
-    console.log("AI response:", response);
 
     await axios.post(
       `${activity.serviceUrl}/v3/conversations/${activity.conversation.id}/activities/${activity.replyToId}`,
@@ -79,11 +67,7 @@ async function processMessage(
       },
     );
 
-    console.log("Teams reply sent.");
-    console.log("=== ASYNC BOT PROCESS END ===");
   } catch (error) {
-    console.error("=== ASYNC BOT PROCESS ERROR ===");
-    console.error(error);
 
     try {
       const botAccessToken = await getBotAccessToken(c.env);
@@ -102,7 +86,6 @@ async function processMessage(
         },
       );
 
-      console.log("Error message sent to Teams.");
     } catch (replyError) {
       console.error(
         "Failed to send error message to Teams:",

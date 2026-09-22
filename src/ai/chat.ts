@@ -49,45 +49,25 @@ export async function chat(
     const maxToolRounds = 5;
 
     for (let round = 0; round < maxToolRounds; round++) {
-        console.log("=== AI REQUEST START ===");
-        console.log("Tool round:", round + 1);
-        console.log("Message count:", messages.length);
-        console.log("Messages:", messages);
 
         const requestStart = Date.now();
 
         let completion;
 
-        try {
-            completion = await client.chat.completions.create(
-                {
-                    model: "orcarouter/auto",
-                    messages,
-                    tools: aiTools,
-                    tool_choice: "auto",
-                },
-                {
-                    timeout: 30000,
-                },
-            );
-        } catch (error) {
-            console.error(
-                "AI request failed after:",
-                Date.now() - requestStart,
-                "ms",
-            );
-            console.error("AI request error:", error);
 
-            throw error;
-        }
-
-        console.log(
-            "AI request duration:",
-            Date.now() - requestStart,
-            "ms",
+        completion = await client.chat.completions.create(
+            {
+                model: "orcarouter/auto",
+                messages,
+                tools: aiTools,
+                tool_choice: "auto",
+            },
+            {
+                timeout: 30000,
+            },
         );
 
-        console.log("=== AI REQUEST END ===");
+
 
         const choice = completion.choices[0];
 
@@ -97,7 +77,6 @@ export async function chat(
 
         const assistantMessage = choice.message;
 
-        console.log("Assistant message:", assistantMessage);
 
         messages.push({
             role: "assistant",
@@ -114,10 +93,6 @@ export async function chat(
                 continue;
             }
 
-            console.log("=== TOOL START ===");
-            console.log("Tool:", toolCall.function.name);
-            console.log("Raw arguments:", toolCall.function.arguments);
-
             let arguments_: unknown;
 
             try {
@@ -130,7 +105,7 @@ export async function chat(
                 );
             }
 
-            console.log("Parsed arguments:", arguments_);
+
 
             const result = await executeTool(
                 toolCall.function.name,
@@ -138,8 +113,6 @@ export async function chat(
                 context,
             );
 
-            console.log("Tool result:", result);
-            console.log("=== TOOL END ===");
 
             messages.push({
                 role: "tool",

@@ -166,6 +166,7 @@ const tokenResult = (await tokenResponse.json()) as {
 export default app;
 ```
 
+<<<<<<< HEAD
 ```ts
 {
     startDateTime: "2026-09-22T00:00:00+09:00",
@@ -178,3 +179,31 @@ export default app;
     ])
 }
 ```
+=======
+### アーキテクチャ
+Teams
+  │
+  │ 「予定教えて」、Botに個別メッセージを送る→トリガーになる→アクションでHTTPリクエストをアプリサーバに送る(URL指定)
+  ↓
+Hono
+  │
+  │ fetch()
+  ↓
+Microsoft Graph　API
+  │
+  │ /me/calendar/events
+  ↓
+予定表
+  │
+  ↓
+Hono
+  │
+  ↓
+Orca Router
+  │
+  ↓
+Hono
+  │Bot Framework REST API
+  ↓
+Teamsへ返信
+>>>>>>> fd799b75956022a5c43f8b71d343e542a26178f2

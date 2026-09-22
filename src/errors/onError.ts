@@ -5,6 +5,7 @@ import { getBotAccessToken } from "../services/auth/botAuth";
 import type { AppEnv } from "../types";
 
 export const onError: ErrorHandler<AppEnv> = async (error, c) => {
+    //運用上はいったんこれだけ
     if (axios.isAxiosError(error)) {
         console.error("Axios Error:", {
             message: error.message,

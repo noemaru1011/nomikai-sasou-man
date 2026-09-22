@@ -42,19 +42,16 @@ export async function executeTool(
     arguments_: unknown,
     context: ToolContext,
 ): Promise<unknown> {
-    console.log("executeTool:", toolName);
 
     switch (toolName) {
         case "findUsers": {
             const args = arguments_ as FindUsersArguments;
-            console.log("findUsers arguments:", args);
 
             const users = await findUsers(
                 context.graphAccessToken,
                 args,
             );
 
-            console.log("findUsers result:", users);
             context.users = users;
 
             return users;
@@ -64,20 +61,11 @@ export async function executeTool(
             const args =
                 arguments_ as SearchUsersByDepartmentArguments;
 
-            console.log(
-                "searchUsersByDepartment arguments:",
-                args,
-            );
-
             const users = await searchUsersByDepartment(
                 context.graphAccessToken,
                 args.department,
             );
 
-            console.log(
-                "searchUsersByDepartment result:",
-                users,
-            );
 
             context.users = users;
 
@@ -88,20 +76,12 @@ export async function executeTool(
             const args =
                 arguments_ as SearchUsersByHireYearArguments;
 
-            console.log(
-                "searchUsersByHireYear arguments:",
-                args,
-            );
 
             const users = await searchUsersByHireYear(
                 context.graphAccessToken,
                 args.hireYear,
             );
 
-            console.log(
-                "searchUsersByHireYear result:",
-                users,
-            );
 
             context.users = users;
 
@@ -112,20 +92,11 @@ export async function executeTool(
             const args =
                 arguments_ as GetChannelMembersArguments;
 
-            console.log(
-                "getChannelMembers arguments:",
-                args,
-            );
 
             const users = await getChannelMembers(
                 context.graphAccessToken,
                 args.teamName,
                 args.channelName,
-            );
-
-            console.log(
-                "getChannelMembers result:",
-                users,
             );
 
             context.users = users;
@@ -134,10 +105,7 @@ export async function executeTool(
         }
 
         case "getUserSchedules": {
-            console.log(
-                "getUserSchedules arguments:",
-                arguments_,
-            );
+
 
             if (!context.users) {
                 throw new Error(
@@ -145,17 +113,8 @@ export async function executeTool(
                 );
             }
 
-            console.log(
-                "getUserSchedules users:",
-                context.users,
-            );
-
             const args =
                 arguments_ as GetUserSchedulesArguments;
-
-            console.log(
-                "Calling Graph getUserSchedules...",
-            );
 
             const userSchedules = await getUserSchedules(
                 context.graphAccessToken,
@@ -164,26 +123,14 @@ export async function executeTool(
                 args.endDateTime,
             );
 
-            console.log(
-                "Graph getUserSchedules completed:",
-                userSchedules,
-            );
 
             const availableTimes =
                 findAvailableTimes(userSchedules);
 
-            console.log(
-                "findAvailableTimes completed:",
-                availableTimes,
-            );
 
             const limitedAvailableTimes =
                 availableTimes.slice(0, 20);
 
-            console.log(
-                "Available times returned to AI:",
-                limitedAvailableTimes,
-            );
 
             return limitedAvailableTimes;
         }
